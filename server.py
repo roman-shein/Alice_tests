@@ -40,6 +40,7 @@ def handle_dialog(req, res):
             if not sessionStorage[user_id]["rabbit"]:
                 agree_user(res)
                 buy_rabbit(user_id)
+                res["response"]["buttons"] = get_suggest(user_id)
             else:
                 end_sess(res)
             return
@@ -79,7 +80,6 @@ def agree_user(res):
 def buy_rabbit(user_id):
     sessionStorage[user_id]["suggest"] = ["Не буду.", "Не хочу.", "Отстань!"]
     sessionStorage[user_id]["rabbit"] = True
-    get_suggest(user_id)
 
 
 def end_sess(res):
