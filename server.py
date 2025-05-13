@@ -73,12 +73,13 @@ def new_user(user_id, res):
 
 
 def agree_user(res):
-    res["response"]["text"] = "Слона можно найти на Яндекс.Маркете!"
+    res["response"]["text"] = "Слона можно найти на Яндекс.Маркете! А теперь купи кролика"
 
 
 def buy_rabbit(user_id):
     sessionStorage[user_id]["suggest"] = ["Не буду.", "Не хочу.", "Отстань!"]
     sessionStorage[user_id]["rabbit"] = True
+    get_suggest(user_id)
 
 
 def end_sess(res):
