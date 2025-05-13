@@ -21,6 +21,10 @@ def main():
         }
     }
 
+    handle_dialog(request.json, response)
+
+    logging.info(f'Response:  {response!r}')
+
     return jsonify(response)
 
 
