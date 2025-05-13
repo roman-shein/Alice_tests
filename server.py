@@ -1,74 +1,65 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import logging
-import json
-from geo import get_country, get_distance, get_coordinates
 
 app = Flask(__name__)
 
-logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logging.basicConfig(level=logging.INFO)
 
-@app.route('/post', methods=['POST'])
+sessionStorage = {}
+
+agree_words = ["ладно", "куплю", "покупаю", "хорошо"]
+
+
+@app.route("/post", methods=["POST"])
 def main():
-
-    logging.info('Request: %r', request.json)
-
+    logging.info(f'Request: {request.json!r}')
     response = {
-        'session': request.json['session'],
-        'version': request.json['version'],
-        'response': {
-            'end_session': False
+        "session": request.json["session"],
+        "version": request.json["version"],
+        "response": {
+            "end_session": False
         }
     }
 
-    handle_dialog(response, request.json)
-
-    logging.info('Request: %r', response)
-
-    return json.dumps(response)
+    return jsonify(response)
 
 
-def handle_dialog(res, req):
+def handle_dialog(req, res):
+    user_id = req["session"]["user_id"]
 
-    user_id = req['session']['user_id']
-
-    if req['session']['new']:
-
-        res['response']['text'] = 'РџСЂРёРІРµС‚! РЇ РјРѕРіСѓ СЃРєР°Р·Р°С‚СЊ РІ РєР°РєРѕР№ СЃС‚СЂР°РЅРµ РіРѕСЂРѕРґ РёР»Рё СЃРєР°Р·Р°С‚СЊ СЂР°СЃСЃС‚РѕСЏРЅРёРµ РјРµР¶РґСѓ РіРѕСЂРѕРґР°РјРё!'
-
+    if req["session"]["new"]:
+        new_user(user_id, res)
         return
 
-    cities = get_cities(req)
+    for el in agree_words:
+        if el in req["original_utterance"].lower():
+            agree_user(res)
+            return
 
-    if len(cities) == 0:
-
-        res['response']['text'] = 'РўС‹ РЅРµ РЅР°РїРёСЃР°Р» РЅР°Р·РІР°РЅРёРµ РЅРµ РѕРґРЅРѕРіРѕ РіРѕСЂРѕРґР°!'
-
-    elif len(cities) == 1:
-
-        res['response']['text'] = 'РС‚РѕС‚ РіРѕСЂРѕРґ РІ СЃС‚СЂР°РЅРµ - ' + get_country(cities[0])
-
-    elif len(cities) == 2:
-
-        distance = get_distance(get_coordinates(cities[0]), get_coordinates(cities[1]))
-        res['response']['text'] = 'Р Р°СЃСЃС‚РѕСЏРЅРёРµ РјРµР¶РґСѓ СЌС‚РёРјРё РіРѕСЂРѕРґР°РјРё: ' + str(round(distance)) + ' РєРј.'
-
-    else:
-
-        res['response']['text'] = 'РЎР»РёС€РєРѕРј РјРЅРѕРіРѕ РіРѕСЂРѕРґРѕРІ!'
+    res["response"]["text"] = f"Все говорят '{req['request']['original_utterance']}', а ты купи слона!"
+    res["response"]["buttons"] = get_suggest(user_id)
 
 
-def get_cities(req):
+def get_suggest(user_id):
+    session = sessionStorage[user_id]["suggests"]
+    suggests = [{"title": suggest, "hide": True} for suggest in session[:2]]
+    session = session[1:]
+    sessionStorage[user_id]["suggest"] = session
 
-    cities = []
+    if len(suggests) < 2:
+        suggests.append({"title": "Ладно", "url": "https://market.yandex.ru/search?text=слон", "hide": True})
+    return suggests
 
-    for entity in req['request']['nlu']['entities']:
 
-        if entity['type'] == 'YANDEX.GEO':
+def new_user(user_id, res):
+    sessionStorage[user_id] = {
+        "suggest": ["Не буду.", "Не хочу.", "Отстань!"]
+    }
 
-            if 'city' in entity['value'].keys():
-                cities.append(entity['value']['city'])
+    res["response"]["text"] = "Привет! Купи слона!"
+    res["response"]["buttons"] = get_suggest(user_id)
 
-    return cities
 
-if __name__ == '__main__':
-    app.run()
+def agree_user(res):
+    res["response"]["text"] = "Слона можно найти на Яндекс.Маркете!"
+    res["response"]["end"] = True
