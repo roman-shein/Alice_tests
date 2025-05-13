@@ -45,7 +45,7 @@ def handle_dialog(req, res):
 
 
 def get_suggest(user_id):
-    session = sessionStorage[user_id]["suggests"]
+    session = sessionStorage[user_id]["suggest"]
     suggests = [{"title": suggest, "hide": True} for suggest in session[:2]]
     session = session[1:]
     sessionStorage[user_id]["suggest"] = session
@@ -67,3 +67,7 @@ def new_user(user_id, res):
 def agree_user(res):
     res["response"]["text"] = "Слона можно найти на Яндекс.Маркете!"
     res["response"]["end"] = True
+
+
+if __name__ == "__main__":
+    app.run(port=8080)
